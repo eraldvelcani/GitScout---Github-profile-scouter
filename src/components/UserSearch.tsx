@@ -1,26 +1,29 @@
+import { fetchGithubUser } from "../api/github";
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { FaGithub } from "react-icons/fa";
+import UserCard from "./UserCard";
+
 
 const UserSearch = () => {
     const [username, setUsername] = useState('');
     const [submittedUsername, setSubmittedUsername] = useState('');
+    const [recentUsers, setRecentUsers] = useState<string[]>([]);
 
     const { data, error, isLoading, isError } = useQuery({
         queryKey: ['users', submittedUsername],
-        queryFn: async () => {
-            const res = await fetch(`${import.meta.env.VITE_GITHUB_API_URL}/users/${submittedUsername}`);
-            if (!res.ok) throw new Error('User not found...');
-
-            const data = await res.json();
-            return data;
-        },
+        queryFn: () => fetchGithubUser(submittedUsername),
         enabled: !!submittedUsername //enabled stops search from running on page load and searching for an empty string, !! turns submittedUsername into a boolean (if submittedUsername !== '' -> false, don't run).
     })
 
     const handleSubmit = (e:React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        setSubmittedUsername(username.trim());
+        const trimmedUser = username.trim();
+        if (!trimmedUser) return;
+        setSubmittedUsername(trimmedUser);
+        setRecentUsers((prev) => {
+            const updated = [trimmedUser, ...prev.filter((u) => u !== trimmedUser)];
+            return updated.slice(0, 5);
+        })
     };
 
     return (
@@ -32,14 +35,25 @@ const UserSearch = () => {
 
             {isLoading && <p className="status">Loading Page...</p>}
             {isError && <p className="error status">{error.message}</p>}
-            { data && (
-                <div className="user-card">
-                    <img src={data.avatar_url} alt={data.name} className="avatar" />
-                    <h2>{data.name || data.login}</h2>
-                    <p className="bio">{data.bio}</p>
-                    <a href={data.html_url} className="profile-btn" target="_blank" rel="noopener noreferrer">View Profile <FaGithub /></a>
-                </div>
-            ) }
+            { data && <UserCard user={data} /> }
+
+            {recentUsers.length > 0 && (
+                <div className="recent-searches">
+                    <div className="recent-header">
+                        <h3>Recently Searched</h3>
+                    </div>
+                    <ul>
+                        {recentUsers.map((user) => (
+                            <li key={user}>
+                                <button onClick={() => {
+                                    setUsername(user);
+                                    setSubmittedUsername(user);
+                                }}>{user}</button>
+                            </li>
+                        ))}
+                    </ul>
+                </div> 
+            )}
         </>
     );
 }
