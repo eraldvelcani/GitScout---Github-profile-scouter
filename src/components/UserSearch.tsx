@@ -2,6 +2,7 @@ import { fetchGithubUser } from "../api/github";
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import UserCard from "./UserCard";
+import RecentSearches from "./RecentSearches";
 
 
 const UserSearch = () => {
@@ -38,21 +39,7 @@ const UserSearch = () => {
             { data && <UserCard user={data} /> }
 
             {recentUsers.length > 0 && (
-                <div className="recent-searches">
-                    <div className="recent-header">
-                        <h3>Recently Searched</h3>
-                    </div>
-                    <ul>
-                        {recentUsers.map((user) => (
-                            <li key={user}>
-                                <button onClick={() => {
-                                    setUsername(user);
-                                    setSubmittedUsername(user);
-                                }}>{user}</button>
-                            </li>
-                        ))}
-                    </ul>
-                </div> 
+                <RecentSearches users={recentUsers} onSelect={(username) => {setUsername(username); setSubmittedUsername(username)}} />
             )}
         </>
     );
